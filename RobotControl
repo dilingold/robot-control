@@ -1,0 +1,417 @@
+/*
+ * RobotControl.java
+ *
+ * This is the control mechanism for the Robot arm - this is the part
+ * of the program that you are required to implement.
+ * 
+ * There are three separate methods which correspond to the the
+ * three scenarios your control mechanism needs to be able to handle -
+ * if you are going to start with scenario A and then move onto
+ * scenarios B and C later then you can finish the control mechanism
+ * for scenario first and then implement your control mechanism for
+ * scenarios B and C in the corresponding empty control methods.
+ *
+ * You do not need to do anything for the Robot itself as it has
+ * already been fully implemented - you just need to supply the control
+ * mechanism(s) to make it move blocks from the source pile to their
+ * corresponding target piles.
+ */
+
+import javax.swing.*;
+
+class RobotControl
+{
+    private Robot r;
+
+    public RobotControl(Robot r)
+    {
+        this.r = r;
+    }
+
+    public void control(int[] barHeights, int[] blockHeights)
+    {
+
+//  	controlMechanismForStageA(barHeights, blockHeights);
+
+//        controlMechanismForStageB(barHeights, blockHeights);
+
+        controlMechanismForStageC(barHeights, blockHeights);
+    }
+ 
+ public void controlMechanismForStageA(int barHeights[],
+            int blockHeights[])
+    {
+        r.slowDown(2);
+
+        //raise extend the arm to pick up the first block
+		for (int i=1; i<=8; i++)
+			r.up();
+    	for (int i=1; i<=9; i++)
+    		r.extend();
+    	r.pick();
+    	
+    	//drop the first bar at on the target bar
+    	for (int i=1; i<=6; i++)
+    		r.contract();
+    	r.down();
+    	r.drop();
+    	
+    	//extend to pick up the second block
+    	for (int i=1; i<=6; i++)
+    		r.extend();	
+    	for (int i=1; i<=2; i++)
+    		r.lower();
+    	r.pick();
+    	
+    	//drop the second bar on the target bar
+    	for (int i=1; i<=2; i++)
+			r.raise();
+    	for (int i=1; i<=5; i++)
+    		r.contract();
+    	r.drop();
+    	
+    	//extend to pick up the third block
+    	for (int i=1; i<=5; i++)
+    		r.extend();	
+    	for (int i=1; i<=5; i++)
+    		r.lower();
+    	r.pick();
+    	
+    	//drop the third block on the target bar
+    	for (int i=1; i<=5; i++)
+			r.raise();
+    	for (int i=1; i<=4; i++)
+    		r.contract();
+    	r.drop();
+    }
+
+    public void controlMechanismForStageB(int barHeights[],
+                                          int blockHeights[])
+    {
+        r.slowDown(2);
+
+        // the state of the robot and bars
+                        
+        int blockHeight=9;
+        int maxBarHeight;        
+        int robotHeight=11;
+        int robotDepth=0;
+       
+        //find the maximum bar height to determine how high to raise hand
+        maxBarHeight=barHeights[0];
+        
+        for (int i=1; i<=5; i++)
+        	if (barHeights[i]>maxBarHeight)
+        		maxBarHeight=barHeights[i];
+        
+        /*raise the robot high enough to be able to pick up first block
+        and extend once to be ready to enter loop */
+        for (int i=2; i<=blockHeight+1; i++)
+        	r.up();
+        for (int i=1; i<=2; i++)
+        	r.extend();
+        
+        //set up a loop to perform the pick up and drop off for the 3 blocks 
+        for (int b=0; b<=2; b++)
+        {
+        
+        	/*if necessary, raise the robot before extending on the way 
+        	to the source pile */
+        	for (int i=b; i<=5; i++)
+        	{
+        		if ((robotHeight-robotDepth-1)<barHeights[i])
+        		{
+        			for (int j=(robotHeight-robotDepth-1); j<barHeights[i]; j++)
+        			{
+        				r.raise();
+        				robotDepth=robotDepth-1;
+        			}
+        		}
+        		r.extend();
+        	}
+        	if ((robotHeight-robotDepth-1)<blockHeight)
+        	{
+        		for (int i=(robotHeight-robotDepth-1); i<blockHeight; i++)
+        				{
+        			r.raise();
+        			robotDepth=robotDepth-1;
+        				}
+        	}
+        	r.extend();
+            
+        	
+        	//lower the hand to pick up the first block
+        	for (int i=(robotHeight-robotDepth); i>(blockHeight+1); i--)
+            {
+            	r.lower();
+    			robotDepth=robotDepth+1;
+            }
+        	r.pick();
+            
+        	/*before each contraction, make sure the robot arm is high 
+        	 enough to contract */
+        	for (int i=5; i>=b; i--)
+        	{
+        		if (barHeights[i]>(robotHeight-1-robotDepth-3))	
+        		{	
+        			for (int j=(robotHeight-1-robotDepth); j<(barHeights[i]+3); j++)
+        			{
+        				r.raise();
+        				robotDepth=robotDepth-1;
+        			}
+        		}
+        		r.contract();
+        	}
+        	
+        	//lower to the height of the target bar and drop the block
+        	for (int i=robotDepth; i<((robotHeight-3-1)-barHeights[b]); i++)
+        	{
+        		r.lower();
+        		robotDepth=robotDepth+1;
+        	}
+        
+        	r.drop();
+        	
+        	//reset the source pile to reflect that a block has been removed
+        	blockHeight=blockHeight-3;}
+        	
+        }
+
+  public void controlMechanismForStageC(int barHeights[],
+                                          int blockHeights[])
+    {
+        r.slowDown(2);
+
+        // the initial state of the robot
+        int robotHeight=1;       
+        int robotDepth=0;        
+        int robotWidth=0;        
+        int targetThreePosition=2;
+        
+        //find the largest bar height from user input 
+        int maxBarHeight;
+        maxBarHeight=barHeights[0];          
+        for (int i=1; i<=5; i++)
+        {
+        	if (barHeights[i]>maxBarHeight)
+        	{
+        		maxBarHeight=barHeights[i];
+        	}
+        }
+        
+        //find the sum of user input blocks
+        int arrayLength=blockHeights.length;        
+        int totalBlockHeight=0;        
+        for (int i=0; i<arrayLength; i++)
+        {
+        	 totalBlockHeight=totalBlockHeight+blockHeights[i];
+        }
+        
+        /* create new array including target size 2, target size 1,
+         6 user input bars and total sum of blocks */
+        int[] allBarHeights=new int[9];
+        allBarHeights[0]=0;
+        allBarHeights[1]=0;
+        for (int i=0; i<=5; i++)
+        {
+        	allBarHeights[i+2]=barHeights[i];
+        }
+        allBarHeights[8]=totalBlockHeight;
+        
+       /*tells the robot to go up to whichever is higher, the maximum bar  
+       from user input, or the total sum of blocks  */               
+       int upIncrement=maxBarHeight;       
+       if (allBarHeights[8]>upIncrement)
+       {
+    	   upIncrement=allBarHeights[8];
+       }        
+        for (int j=2; j<=upIncrement; j++)
+        {
+        	r.up();
+        	robotHeight=robotHeight+1;
+        }
+        
+        //sets up a loop for the total amount of blocks from user input
+    	for (int bl=arrayLength-1; bl>=0; bl--)
+        {
+    		/*before each extension the robot checks that it's height minus
+            depth is high enough to extend. If not it raises the hand before extending */
+    		for (int i=robotWidth; i<=8; i++)
+    		{
+    			if (robotHeight-robotDepth<allBarHeights[i])
+    			{
+    				for (int j=(robotHeight-robotDepth); j<allBarHeights[i]; j++)
+        			{
+        				r.raise();
+        				robotDepth=robotDepth-1;
+        			}	
+    			}
+    			r.extend();
+    			robotWidth=robotWidth+1;
+    		}
+    		
+    		//robot lowers hand to pick up the next block
+           for (int i=(robotHeight-robotDepth); i>allBarHeights[8]; i--)
+            {
+            	r.lower();
+    			robotDepth=robotDepth+1;
+            }
+           
+        	r.pick();
+        	
+        	//resets the total block height to reflect that one has been removed
+        	allBarHeights[8]=allBarHeights[8]-blockHeights[bl];
+        	
+            /*if the block size picked up is 1, the robot must drop it at target size 1
+        	but first must make sure the robot height is high enough to reach over any
+        	bars that now might have a block size 3 on it */
+        	if (blockHeights[bl]==1)
+        	{
+        		for (int i=0; i<=4; i++)
+        		{
+        			if (allBarHeights[i]+blockHeights[bl]>robotHeight)
+        			{
+        				for (int j=robotHeight; j<allBarHeights[i]+blockHeights[bl]; j++)
+        				{
+        					r.up();
+        					robotHeight=robotHeight+1;
+        				}
+        			}
+        		}
+        		
+        		/*from the block pile until target size 1, the robot contracts, raising
+        		its arm when necessary */
+        		for (int i=7; i>=0; i--)
+                {
+                	if (allBarHeights[i]>(robotHeight-robotDepth-blockHeights[bl]))	
+                	{	
+                		for (int j=robotHeight-robotDepth-blockHeights[bl]; 
+                				j<allBarHeights[i]; j++)
+                		{
+                			r.raise();
+                			robotDepth=robotDepth-1;
+                		}
+                	}
+                	r.contract();
+                	robotWidth=robotWidth-1;
+                }
+        		
+        		//once at target size 1, the robot arm lowers to drop the block
+        		for (int i=robotHeight-robotDepth; i>allBarHeights[0]+1; i--)
+        		{
+        			r.lower();
+        			robotDepth=robotDepth+1;
+        		}        		
+        		r.drop();
+        		
+        		//resets the target size 1 pile to reflect its new height
+    			allBarHeights[0]=allBarHeights[0]+1;    	
+        	}
+        	
+            /*if the block size picked up is 2, the robot must drop it at target size 2
+        	but first must make sure the robot height is high enough to reach over any
+        	bars that now might have a block size 3 on it */
+        	if (blockHeights[bl]==2)
+        	{
+        		for (int i=0; i<=4; i++)
+        		{
+        			if (allBarHeights[i]+blockHeights[bl]>robotHeight)
+        			{
+        				for (int j=robotHeight; j<allBarHeights[i]+blockHeights[bl]; j++)
+        				{
+        					r.up();
+        					robotHeight=robotHeight+1;
+        				}
+        			}
+        		}
+        		
+        		/*from the block pile until target size 2, the robot contracts, raising
+        		it's arm when necessary */
+        		for (int i=7; i>=1; i--)
+                {
+                	if (allBarHeights[i]>(robotHeight-robotDepth-blockHeights[bl]))	
+                	{	
+                		for (int j=robotHeight-robotDepth-blockHeights[bl]; 
+                				j<allBarHeights[i]; j++)
+                		{
+                			r.raise();
+                			robotDepth=robotDepth-1;
+                		}
+                	}
+                	r.contract();
+                	robotWidth=robotWidth-1;
+                }
+        		
+        		//once at target size 2, the robot arm lowers to drop the block
+        		for (int i=robotHeight-robotDepth; i>allBarHeights[1]+2; i--)
+        		{
+        			r.lower();
+        			robotDepth=robotDepth+1;
+        		}        		
+        		r.drop();
+        		
+        		//resets the target size 2 pile to reflect its new height
+    			allBarHeights[1]=allBarHeights[1]+2;    	
+        	}
+        	
+        	/*if the block height is 3 the robot must drop it at the left most available
+        	user input bar (starting with bar 0)
+        	to make sure the robot is high enough to fit a size 3 block over the bars
+        	first check the total height of bar heights and block height against the
+        	robot height, and move up if necessary */
+        	if (blockHeights[bl]==3)
+        	{
+        		for (int i=7; i>=targetThreePosition; i--)
+            		{
+            			if (allBarHeights[i]+blockHeights[bl]>robotHeight)
+            			{
+            				for (int j=robotHeight; 
+            						j<allBarHeights[i]+blockHeights[bl]; j++)
+            				{
+            					r.up();
+            					robotHeight=robotHeight+1;
+            				}
+            			}
+            		}
+        		
+        		/*from the block pile until left most available bar, the robot contracts, 
+        		raising it's arm when necessary */
+        		for (int i=7; i>=targetThreePosition; i--)
+                {
+                	if (allBarHeights[i]>(robotHeight-robotDepth-blockHeights[bl]))	
+                	{	
+                		for (int j=robotHeight-robotDepth-blockHeights[bl]; 
+                				j<allBarHeights[i]; j++)
+                		{
+                			r.raise();
+                			robotDepth=robotDepth-1;
+                		}
+                	}
+                	r.contract();
+                	robotWidth=robotWidth-1;
+                }
+        		
+        		//once at target bar, the robot arm lowers to drop the block
+        		for (int i=robotHeight-robotDepth; 
+        				i>allBarHeights[targetThreePosition]+3; i--)
+        		{
+        			r.lower();
+        			robotDepth=robotDepth+1;
+        		}
+        		
+        		r.drop();
+        		
+        		//resets the bar height where the size 3 block was just dropped to reflect
+        		//its new height
+    			allBarHeights[targetThreePosition]=allBarHeights[targetThreePosition]+3;
+    			
+    			//sets the next position to drop a size 3 block
+    			targetThreePosition=targetThreePosition+1;
+        	}
+        	
+        }
+
+    }
+}
+
+
